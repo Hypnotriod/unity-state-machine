@@ -13,11 +13,11 @@ namespace Assets.Scripts.StateMachine
             HandleNextState(state);
         }
 
-        private void HandleNextState(State state, Queue<Func<StateHandler>> queue = null)
+        private void HandleNextState(State state, Queue<Func<ActionHandler>> queue = null)
         {
             queue?.Dequeue();
 
-            int queuedTasksCount = state.TaskQueues.Sum(q => q.Count);
+            int queuedActionsCount = state.ActionQueues.Sum(q => q.Count);
 
             if (queue != null)
             {
@@ -26,20 +26,20 @@ namespace Assets.Scripts.StateMachine
                     var handler = queue.Peek();
                     handler().Completed = () => HandleNextState(state, queue);
                 }
-                else if (queuedTasksCount == 0)
+                else if (queuedActionsCount == 0)
                 {
                     state.Complete();
                 }
                 return;
             }
 
-            if (queuedTasksCount == 0)
+            if (queuedActionsCount == 0)
             {
                 state.Complete();
                 return;
             }
 
-            foreach (var q in state.TaskQueues)
+            foreach (var q in state.ActionQueues)
             {
                 if (q.Count > 0)
                 {
@@ -49,14 +49,14 @@ namespace Assets.Scripts.StateMachine
             }
         }
 
-        protected List<Queue<Func<StateHandler>>> InParallel(params Queue<Func<StateHandler>>[] list)
+        protected List<Queue<Func<ActionHandler>>> InParallel(params Queue<Func<ActionHandler>>[] list)
         {
-            return new List<Queue<Func<StateHandler>>>(list);
+            return new List<Queue<Func<ActionHandler>>>(list);
         }
 
-        protected Queue<Func<StateHandler>> InSequence(params Func<StateHandler>[] list)
+        protected Queue<Func<ActionHandler>> InSequence(params Func<ActionHandler>[] list)
         {
-            return new Queue<Func<StateHandler>>(list);
+            return new Queue<Func<ActionHandler>>(list);
         }
     }
 }

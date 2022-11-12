@@ -6,24 +6,9 @@ using UnityEngine;
 
 public class GameComponent : MonoBehaviour
 {
-    private readonly Queue<StateHandler> stateHandlers = new();
-
-    protected StateHandler EnqueueHandler()
+    protected ActionHandler CompletedHandler()
     {
-        var handler = new StateHandler();
-        stateHandlers.Enqueue(handler);
-        return handler;
-    }
-
-    protected StateHandler CompletedHandler()
-    {
-        return new StateHandler().Complete();
-    }
-
-    protected void CompleteState()
-    {
-        if (stateHandlers.Count == 0) return;
-        stateHandlers.Dequeue()?.Complete();
+        return new ActionHandler().Complete();
     }
 
     protected void Delay(float seconds, Action action)

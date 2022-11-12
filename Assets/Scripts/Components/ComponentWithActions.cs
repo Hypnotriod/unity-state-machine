@@ -9,21 +9,23 @@ using UnityEngine;
 
 internal class ComponentWithActions : GameComponent
 {
-    public StateHandler ActionInstant()
+    private readonly ActionHandler actionDelayedHandler = new();
+
+    public ActionHandler ActionInstant()
     {
         Debug.LogFormat("Action on {0}: Instant", gameObject.name);
         return CompletedHandler();
     }
 
-    public StateHandler ActionDelayed(float seconds)
+    public ActionHandler ActionDelayed(float seconds)
     {
-        Debug.LogFormat("Action on {0}: Begun", gameObject.name);
+        Debug.LogFormat("Action on {0}: Wait for {1} seconds", gameObject.name, seconds);
         Delay(seconds, () =>
         {
             Debug.LogFormat("Action on {0}: Completed after {1} seconds", gameObject.name, seconds);
-            CompleteState();
+            actionDelayedHandler.Complete();
         });
 
-        return EnqueueHandler();
+        return actionDelayedHandler.Reset();
     }
 }

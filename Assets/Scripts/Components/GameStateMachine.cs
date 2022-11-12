@@ -19,37 +19,31 @@ public class GameStateMachine : StateMachine
         NextState(Initial());
     }
 
-    private State Initial()
+    private State Initial() => new(InParallel(
+        InSequence(
+            () => component1.ActionInstant(),
+            () => component1.ActionDelayed(1f),
+            () => component1.ActionDelayed(1.5f),
+            () => component1.ActionDelayed(2f)),
+        InSequence(
+            () => component2.ActionDelayed(2f),
+            () => component2.ActionDelayed(1.5f),
+            () => component2.ActionDelayed(0.5f),
+            () => component2.ActionInstant())
+    ), () =>
     {
-        return new State(InParallel(
-            InSequence(
-                () => component1.ActionInstant(),
-                () => component1.ActionDelayed(1f),
-                () => component1.ActionDelayed(1.5f),
-                () => component1.ActionDelayed(2f)),
-            InSequence(
-                () => component2.ActionDelayed(2f),
-                () => component2.ActionDelayed(1.5f),
-                () => component2.ActionDelayed(0.5f),
-                () => component2.ActionInstant())
-        ), () =>
-        {
-            Debug.Log("Moved to next state");
-            NextState(Next());
-        });
-    }
+        Debug.Log("Moved to next state");
+        NextState(Next());
+    });
 
-    private State Next()
+
+    private State Next() => new(InSequence(
+        () => component1.ActionInstant(),
+        () => component2.ActionDelayed(2f),
+        () => component1.ActionDelayed(3f),
+        () => component2.ActionInstant()
+    ), () =>
     {
-        return new State(InParallel(
-            InSequence(
-                () => component1.ActionInstant(),
-                () => component1.ActionDelayed(3f)),
-            InSequence(
-                () => component2.ActionDelayed(2f))
-        ), () =>
-        {
-            Debug.Log("Done");
-        });
-    }
+        Debug.Log("Done");
+    });
 }
