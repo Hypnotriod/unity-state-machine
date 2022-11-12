@@ -35,7 +35,7 @@ public class GameStateMachine : StateMachine
         Debug.Log("State Machine: Enter Initial state");
     }, () =>
     {
-        Debug.Log("State Machine: Moved to next state");
+        Debug.Log("State Machine: Moved to Next state");
         NextState(Next());
     });
 
@@ -46,6 +46,7 @@ public class GameStateMachine : StateMachine
         () => component2.ActionInstant()
     ), (State state) =>
     {
+        Debug.Log("State Machine: Enter Next state");
         state.RegisterAbortHandler(component1.ActionDelayed(2.1f), () =>
         {
             Debug.Log("State Machine: Aborted");

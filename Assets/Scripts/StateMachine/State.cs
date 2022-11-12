@@ -14,7 +14,9 @@ namespace Assets.Scripts.StateMachine
         private readonly List<Queue<Func<ActionHandler>>> actionQueues;
         private Action completeAction;
         private Action<State> beginAction;
-        private bool done = false;
+        private bool isCompleted = false;
+        private bool isAborted = false;
+        private bool isStarted = false;
 
         public State(List<Queue<Func<ActionHandler>>> actionQueues, Action completeAction)
         {
@@ -47,22 +49,17 @@ namespace Assets.Scripts.StateMachine
             abortHandlers.Add(actionHandler.WithComplete(() => Abort(action)));
         }
 
-        public void Abort(Action action)
-        {
-            done = true;
-            Drain();
-            action?.Invoke();
-        }
-
         public void Begin()
         {
+            if (isStarted) { return; }
+            isStarted = true;
             beginAction?.Invoke(this);
             HandleNextState();
         }
 
         private void HandleNextState(Queue<Func<ActionHandler>> queue = null, ActionHandler handler = null)
         {
-            if (done) { return; }
+            if (isCompleted || isAborted) { return; }
 
             queue?.Dequeue();
 
@@ -103,11 +100,18 @@ namespace Assets.Scripts.StateMachine
 
         private void Complete()
         {
-            done = true;
+            isCompleted = true;
             Drain();
             var tmp = completeAction;
             completeAction = null;
             tmp.Invoke();
+        }
+
+        private void Abort(Action action)
+        {
+            isAborted = true;
+            Drain();
+            action?.Invoke();
         }
 
         private void Drain()
@@ -120,6 +124,7 @@ namespace Assets.Scripts.StateMachine
             {
                 handler.Abort();
             }
+            beginAction = null;
             abortHandlers.Clear();
             activeHandlers.Clear();
             actionQueues.Clear();
