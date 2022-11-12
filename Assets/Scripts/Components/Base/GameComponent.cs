@@ -11,9 +11,9 @@ public class GameComponent : MonoBehaviour
         return new ActionHandler().Complete();
     }
 
-    protected void Delay(float seconds, Action action)
+    protected Coroutine Delay(float seconds, Action action)
     {
-        StartCoroutine(DelayRoutine(seconds, action));
+        return StartCoroutine(DelayRoutine(seconds, action));
     }
 
     private IEnumerator DelayRoutine(float seconds, Action action)

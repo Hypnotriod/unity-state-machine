@@ -9,7 +9,6 @@ using UnityEngine;
 
 internal class ComponentWithActions : GameComponent
 {
-    private readonly ActionHandler actionDelayedHandler = new();
 
     public ActionHandler ActionInstant()
     {
@@ -17,15 +16,20 @@ internal class ComponentWithActions : GameComponent
         return CompletedHandler();
     }
 
+    private readonly ActionHandler actionDelayedHandler = new();
     public ActionHandler ActionDelayed(float seconds)
     {
         Debug.LogFormat("Action on {0}: Wait for {1} seconds", gameObject.name, seconds);
-        Delay(seconds, () =>
+        Coroutine delayCoroutine = Delay(seconds, () =>
         {
             Debug.LogFormat("Action on {0}: Completed after {1} seconds", gameObject.name, seconds);
             actionDelayedHandler.Complete();
         });
 
-        return actionDelayedHandler.Reset();
+        return actionDelayedHandler.Set().WithAbort(() =>
+        {
+            Debug.LogFormat("Action on {0}: Wait for {1} seconds: Aborted", gameObject.name, seconds);
+            StopCoroutine(delayCoroutine);
+        });
     }
 }

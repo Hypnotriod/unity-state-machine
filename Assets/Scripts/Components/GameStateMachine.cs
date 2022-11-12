@@ -30,20 +30,28 @@ public class GameStateMachine : StateMachine
             () => component2.ActionDelayed(1.5f),
             () => component2.ActionDelayed(0.5f),
             () => component2.ActionInstant())
-    ), () =>
+    ), (State state) =>
     {
-        Debug.Log("Moved to next state");
+        Debug.Log("State Machine: Enter Initial state");
+    }, () =>
+    {
+        Debug.Log("State Machine: Moved to next state");
         NextState(Next());
     });
 
-
     private State Next() => new(InSequence(
-        () => component1.ActionInstant(),
+        () => component2.ActionInstant(),
         () => component2.ActionDelayed(2f),
-        () => component1.ActionDelayed(3f),
+        () => component2.ActionDelayed(3f),
         () => component2.ActionInstant()
-    ), () =>
+    ), (State state) =>
     {
-        Debug.Log("Done");
+        state.RegisterAbortHandler(component1.ActionDelayed(2.1f), () =>
+        {
+            Debug.Log("State Machine: Aborted");
+        });
+    }, () =>
+    {
+        Debug.Log("State Machine: Done");
     });
 }
