@@ -14,6 +14,7 @@ namespace Assets.Scripts.StateMachine
         private readonly List<Queue<Func<ActionHandler>>> actionQueues;
         private Action completeAction;
         private Action<State> beginAction;
+        private bool isInSync = false;
         private bool isCompleted = false;
         private bool isAborted = false;
         private bool isStarted = false;
@@ -54,38 +55,15 @@ namespace Assets.Scripts.StateMachine
             if (isStarted) { return; }
             isStarted = true;
             beginAction?.Invoke(this);
-            HandleNextState();
+            isInSync = true;
+            HandleStates();
+            isInSync = false;
+            TryToComplete();
         }
 
-        private void HandleNextState(Queue<Func<ActionHandler>> queue = null, ActionHandler handler = null)
+        private void HandleStates()
         {
-            if (isCompleted || isAborted) { return; }
-
-            queue?.Dequeue();
-
-            int queuedActionsCount = actionQueues.Sum(q => q.Count);
-
-            if (queue != null && handler != null)
-            {
-                activeHandlers.Remove(handler);
-                if (queue.Count > 0)
-                {
-                    var h = queue.Peek()();
-                    activeHandlers.Add(h);
-                    h.WithComplete(() => HandleNextState(queue, h));
-                }
-                else if (queuedActionsCount == 0)
-                {
-                    Complete();
-                }
-                return;
-            }
-
-            if (queuedActionsCount == 0)
-            {
-                Complete();
-                return;
-            }
+            if (isCompleted || isAborted || TryToComplete()) { return; }
 
             foreach (var q in actionQueues)
             {
@@ -93,13 +71,43 @@ namespace Assets.Scripts.StateMachine
                 {
                     var h = q.Peek()();
                     activeHandlers.Add(h);
-                    h.WithComplete(() => HandleNextState(q, h));
+                    h.WithComplete(() => HandleNextQueuedState(q, h));
                 }
             }
         }
 
+        private void HandleNextQueuedState(Queue<Func<ActionHandler>> queue, ActionHandler handler)
+        {
+            if (isCompleted || isAborted) { return; }
+
+            queue.Dequeue();
+
+            activeHandlers.Remove(handler);
+            if (queue.Count > 0)
+            {
+                var h = queue.Peek()();
+                activeHandlers.Add(h);
+                h.WithComplete(() => HandleNextQueuedState(queue, h));
+            }
+            else
+            {
+                TryToComplete();
+            }
+        }
+
+        private bool TryToComplete()
+        {
+            if (actionQueues.Sum(q => q.Count) == 0)
+            {
+                Complete();
+                return true;
+            }
+            return false;
+        }
+
         private void Complete()
         {
+            if (isCompleted || isInSync || isAborted) { return; }
             isCompleted = true;
             Drain();
             var tmp = completeAction;
