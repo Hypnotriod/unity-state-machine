@@ -63,14 +63,6 @@ namespace Assets.Scripts.StateMachine
             return this;
         }
 
-        public ActionHandler Set()
-        {
-            isAborted = false;
-            isCompleted = false;
-            InvokeCompleted();
-            return this;
-        }
-
         private void InvokeCompleted()
         {
             abortAction = null;
