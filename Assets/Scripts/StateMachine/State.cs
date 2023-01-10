@@ -66,14 +66,13 @@ namespace Assets.Scripts.StateMachine
             {
                 while (q.Count > 0)
                 {
-                    var h = q.Peek()();
+                    var h = q.Dequeue()();
                     if (!h.IsCompleted)
                     {
                         activeHandlers.Add(h);
                         h.WithComplete(() => HandleNextQueuedState(q, h));
                         break;
                     }
-                    q.Dequeue();
                 }
             }
         }
@@ -82,36 +81,32 @@ namespace Assets.Scripts.StateMachine
         {
             if (isCompleted || isAborted) { return; }
 
-            queue.Dequeue();
             activeHandlers.Remove(handler);
 
             while (queue.Count > 0)
             {
-                var h = queue.Peek()();
+                var h = queue.Dequeue()();
                 if (!h.IsCompleted)
                 {
                     activeHandlers.Add(h);
                     h.WithComplete(() => HandleNextQueuedState(queue, h));
                     return;
                 }
-                queue.Dequeue();
             }
             TryToComplete();
         }
 
-        private bool TryToComplete()
+        private void TryToComplete()
         {
-            if (actionQueues.Sum(q => q.Count) == 0)
+            if (isCompleted || isAborted) { return; }
+            if (activeHandlers.Count == 0 && actionQueues.Sum(q => q.Count) == 0)
             {
                 Complete();
-                return true;
             }
-            return false;
         }
 
         private void Complete()
         {
-            if (isCompleted || isAborted) { return; }
             isCompleted = true;
             Drain();
             var tmp = completeAction;
