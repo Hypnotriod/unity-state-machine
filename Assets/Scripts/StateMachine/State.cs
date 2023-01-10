@@ -14,7 +14,6 @@ namespace Assets.Scripts.StateMachine
         private readonly List<Queue<Func<ActionHandler>>> actionQueues;
         private Action completeAction;
         private Action<State> beginAction;
-        private bool isInSync = false;
         private bool isCompleted = false;
         private bool isAborted = false;
         private bool isStarted = false;
@@ -55,23 +54,26 @@ namespace Assets.Scripts.StateMachine
             if (isStarted) { return; }
             isStarted = true;
             beginAction?.Invoke(this);
-            isInSync = true;
             HandleStates();
-            isInSync = false;
             TryToComplete();
         }
 
         private void HandleStates()
         {
-            if (isCompleted || isAborted || TryToComplete()) { return; }
+            if (isCompleted || isAborted) { return; }
 
             foreach (var q in actionQueues)
             {
-                if (q.Count > 0)
+                while (q.Count > 0)
                 {
                     var h = q.Peek()();
-                    activeHandlers.Add(h);
-                    h.WithComplete(() => HandleNextQueuedState(q, h));
+                    if (!h.IsCompleted)
+                    {
+                        activeHandlers.Add(h);
+                        h.WithComplete(() => HandleNextQueuedState(q, h));
+                        break;
+                    }
+                    q.Dequeue();
                 }
             }
         }
@@ -81,18 +83,20 @@ namespace Assets.Scripts.StateMachine
             if (isCompleted || isAborted) { return; }
 
             queue.Dequeue();
-
             activeHandlers.Remove(handler);
-            if (queue.Count > 0)
+
+            while (queue.Count > 0)
             {
                 var h = queue.Peek()();
-                activeHandlers.Add(h);
-                h.WithComplete(() => HandleNextQueuedState(queue, h));
+                if (!h.IsCompleted)
+                {
+                    activeHandlers.Add(h);
+                    h.WithComplete(() => HandleNextQueuedState(queue, h));
+                    return;
+                }
+                queue.Dequeue();
             }
-            else
-            {
-                TryToComplete();
-            }
+            TryToComplete();
         }
 
         private bool TryToComplete()
@@ -107,7 +111,7 @@ namespace Assets.Scripts.StateMachine
 
         private void Complete()
         {
-            if (isCompleted || isInSync || isAborted) { return; }
+            if (isCompleted || isAborted) { return; }
             isCompleted = true;
             Drain();
             var tmp = completeAction;
