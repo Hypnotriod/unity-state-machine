@@ -22,5 +22,17 @@ namespace Assets.Scripts.StateMachine
         {
             return new Queue<Func<ActionHandler>>(list);
         }
+
+        protected ActionHandler InParallelNested(params Queue<Func<ActionHandler>>[] list)
+        {
+            ActionHandler nestedHandler = new();
+            ActionHandler abortHandler = new();
+            nestedHandler.WithAbort(() => abortHandler.Complete());
+            State state = new(InParallel(list),
+                (State state) => state.RegisterAbortHandler(abortHandler, () => { }),
+                () => nestedHandler.Complete());
+            state.Begin();
+            return nestedHandler;
+        }
     }
 }
