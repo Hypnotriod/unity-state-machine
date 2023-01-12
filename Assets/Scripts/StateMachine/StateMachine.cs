@@ -18,6 +18,16 @@ namespace Assets.Scripts.StateMachine
             return new List<Queue<Func<ActionHandler>>>(list);
         }
 
+        protected List<Queue<Func<ActionHandler>>> InParallel(params Func<ActionHandler>[] list)
+        {
+            return list.Select(h =>
+            {
+                Queue<Func<ActionHandler>> queue = new();
+                queue.Enqueue(h);
+                return queue;
+            }).ToList();
+        }
+
         protected Queue<Func<ActionHandler>> InSequence(params Func<ActionHandler>[] list)
         {
             return new Queue<Func<ActionHandler>>(list);
@@ -25,10 +35,20 @@ namespace Assets.Scripts.StateMachine
 
         protected ActionHandler InParallelNested(params Queue<Func<ActionHandler>>[] list)
         {
+            return InParallelNested(InParallel(list));
+        }
+
+        protected ActionHandler InParallelNested(params Func<ActionHandler>[] list)
+        {
+            return InParallelNested(InParallel(list));
+        }
+
+        protected ActionHandler InParallelNested(List<Queue<Func<ActionHandler>>> list)
+        {
             ActionHandler nestedHandler = new();
             ActionHandler abortHandler = new();
             nestedHandler.WithAbort(() => abortHandler.Complete());
-            State state = new(InParallel(list),
+            State state = new(list,
                 (State state) => state.RegisterAbortHandler(abortHandler, () => { }),
                 () => nestedHandler.Complete());
             state.Begin();
