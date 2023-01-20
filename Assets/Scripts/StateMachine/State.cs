@@ -17,6 +17,7 @@ namespace Assets.Scripts.StateMachine
         private bool isCompleted = false;
         private bool isAborted = false;
         private bool isStarted = false;
+        private bool isSuspended = false;
 
         public State(List<Queue<Func<ActionHandler>>> actionQueues, Action completeAction)
         {
@@ -44,9 +45,62 @@ namespace Assets.Scripts.StateMachine
             this.beginAction = beginAction;
         }
 
+        public bool IsCompleted
+        {
+            get
+            {
+                return this.isCompleted;
+            }
+        }
+
+        public bool IsAborted
+        {
+            get
+            {
+                return this.isAborted;
+            }
+        }
+
+        public bool IsStarted
+        {
+            get
+            {
+                return this.isStarted;
+            }
+        }
+
+        public bool IsSuspended
+        {
+            get
+            {
+                return this.isSuspended;
+            }
+        }
+
         public void RegisterAbortHandler(ActionHandler actionHandler, Action action)
         {
             abortHandlers.Add(actionHandler.WithComplete(() => Abort(action)));
+        }
+
+        public void Suspend()
+        {
+            if (isCompleted || isAborted || isSuspended) { return; }
+            isSuspended = true;
+            foreach (var h in activeHandlers)
+            {
+                h.Suspend();
+            }
+        }
+
+        public void Resume()
+        {
+            if (isCompleted || isAborted || !isSuspended) { return; }
+            isSuspended = false;
+            foreach (var h in activeHandlers)
+            {
+                h.Resume();
+            }
+            TryToComplete();
         }
 
         public void Begin()
@@ -98,7 +152,7 @@ namespace Assets.Scripts.StateMachine
 
         private void TryToComplete()
         {
-            if (isCompleted || isAborted) { return; }
+            if (isCompleted || isAborted || isSuspended) { return; }
             if (activeHandlers.Count == 0 && actionQueues.Sum(q => q.Count) == 0)
             {
                 Complete();

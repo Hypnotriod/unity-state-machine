@@ -10,6 +10,9 @@ namespace Assets.Scripts.StateMachine
         private Action completeAction = null;
         private bool isAborted = false;
         private Action abortAction = null;
+        private bool isSuspended = false;
+        private Action suspendAction = null;
+        private Action resumeAction = null;
 
         public bool IsCompleted
         {
@@ -24,6 +27,14 @@ namespace Assets.Scripts.StateMachine
             get
             {
                 return this.isAborted;
+            }
+        }
+
+        public bool IsSuspended
+        {
+            get
+            {
+                return this.isSuspended;
             }
         }
 
@@ -49,8 +60,33 @@ namespace Assets.Scripts.StateMachine
             return this;
         }
 
+        public ActionHandler WithSuspendResume(Action suspendAction, Action resumeAction)
+        {
+            if (isCompleted || isAborted) { return this; }
+            this.suspendAction = suspendAction;
+            this.resumeAction = resumeAction;
+            return this;
+        }
+
+        public ActionHandler Suspend()
+        {
+            if (isCompleted || isAborted || isSuspended) { return this; }
+            isSuspended = true;
+            suspendAction?.Invoke();
+            return this;
+        }
+
+        public ActionHandler Resume()
+        {
+            if (isCompleted || isAborted || !isSuspended) { return this; }
+            isSuspended = false;
+            resumeAction?.Invoke();
+            return this;
+        }
+
         public ActionHandler Complete()
         {
+            if (isCompleted || isAborted) { return this; }
             isCompleted = true;
             InvokeCompleted();
             return this;
@@ -58,6 +94,7 @@ namespace Assets.Scripts.StateMachine
 
         public ActionHandler Abort()
         {
+            if (isCompleted || isAborted) { return this; }
             isAborted = true;
             InvokeAborted();
             return this;
@@ -66,6 +103,8 @@ namespace Assets.Scripts.StateMachine
         private void InvokeCompleted()
         {
             abortAction = null;
+            suspendAction = null;
+            resumeAction = null;
             var tmp = completeAction;
             completeAction = null;
             tmp?.Invoke();
@@ -74,6 +113,8 @@ namespace Assets.Scripts.StateMachine
         private void InvokeAborted()
         {
             completeAction = null;
+            suspendAction = null;
+            resumeAction = null;
             var tmp = abortAction;
             abortAction = null;
             tmp?.Invoke();

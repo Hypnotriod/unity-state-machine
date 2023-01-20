@@ -8,9 +8,22 @@ namespace Assets.Scripts.StateMachine
 {
     public class StateMachine : MonoBehaviour
     {
+        private State state = null;
+
         protected void NextState(State state)
         {
-            state.Begin();
+            this.state = state;
+            this.state.Begin();
+        }
+
+        protected void SuspendCurrentState()
+        {
+            this.state?.Suspend();
+        }
+
+        protected void ResumeCurrentState()
+        {
+            this.state?.Resume();
         }
 
         protected List<Queue<Func<ActionHandler>>> InParallel(params Queue<Func<ActionHandler>>[] list)
