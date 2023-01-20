@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -12,6 +11,7 @@ namespace Assets.Scripts.StateMachine
 
         protected void NextState(State state)
         {
+            this.state?.Abort();
             this.state = state;
             this.state.Begin();
         }
@@ -58,14 +58,11 @@ namespace Assets.Scripts.StateMachine
 
         protected ActionHandler InParallelNested(List<Queue<Func<ActionHandler>>> list)
         {
-            ActionHandler nestedHandler = new();
-            ActionHandler abortHandler = new();
-            nestedHandler.WithAbort(() => abortHandler.Complete());
-            State state = new(list,
-                (State state) => state.RegisterAbortHandler(abortHandler, () => { }),
-                () => nestedHandler.Complete());
+            ActionHandler handler = new();
+            State state = new(list, () => handler.Complete());
+            handler.WithAbort(() => state.Abort());
             state.Begin();
-            return nestedHandler;
+            return handler;
         }
     }
 }

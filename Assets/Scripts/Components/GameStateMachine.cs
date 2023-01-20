@@ -30,7 +30,7 @@ public class GameStateMachine : StateMachine
             () => component2.ActionDelayed(1.5f),
             () => component2.ActionDelayed(0.5f),
             () => component2.ActionInstant())
-    ), (State state) =>
+    ), state =>
     {
         Debug.Log("State Machine: Enter Initial state");
     }, () =>
@@ -44,7 +44,7 @@ public class GameStateMachine : StateMachine
         () => component2.ActionDelayed(2f),
         () => component2.ActionDelayed(3f),
         () => component2.ActionInstant()
-    ), (State state) =>
+    ), state =>
     {
         Debug.Log("State Machine: Enter Next state");
         state.RegisterAbortHandler(component1.ActionDelayed(2.1f), () =>

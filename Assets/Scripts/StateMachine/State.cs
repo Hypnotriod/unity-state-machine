@@ -1,19 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine.XR;
 
 namespace Assets.Scripts.StateMachine
 {
-    public class State
+    public class State : IStateHandler
     {
         private readonly List<ActionHandler> abortHandlers = new();
         private readonly List<ActionHandler> activeHandlers = new();
         private readonly List<Queue<Func<ActionHandler>>> actionQueues;
         private Action completeAction;
-        private Action<State> beginAction;
+        private Action<IStateHandler> beginAction;
         private bool isCompleted = false;
         private bool isAborted = false;
         private bool isStarted = false;
@@ -31,14 +28,14 @@ namespace Assets.Scripts.StateMachine
             this.completeAction = completeAction;
         }
 
-        public State(List<Queue<Func<ActionHandler>>> actionQueues, Action<State> beginAction, Action completeAction)
+        public State(List<Queue<Func<ActionHandler>>> actionQueues, Action<IStateHandler> beginAction, Action completeAction)
         {
             this.actionQueues = actionQueues;
             this.completeAction = completeAction;
             this.beginAction = beginAction;
         }
 
-        public State(Queue<Func<ActionHandler>> queue, Action<State> beginAction, Action completeAction)
+        public State(Queue<Func<ActionHandler>> queue, Action<IStateHandler> beginAction, Action completeAction)
         {
             this.actionQueues = new List<Queue<Func<ActionHandler>>> { queue };
             this.completeAction = completeAction;
@@ -168,8 +165,16 @@ namespace Assets.Scripts.StateMachine
             tmp.Invoke();
         }
 
+        public void Abort()
+        {
+            if (isCompleted || isAborted) { return; }
+            isAborted = true;
+            Drain();
+        }
+
         private void Abort(Action action)
         {
+            if (isCompleted || isAborted) { return; }
             isAborted = true;
             Drain();
             action?.Invoke();
