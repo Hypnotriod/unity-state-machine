@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Assets.Scripts.StateMachine
 {
@@ -11,6 +12,7 @@ namespace Assets.Scripts.StateMachine
         private bool isSuspended = false;
         private Action suspendAction = null;
         private Action resumeAction = null;
+        private TaskCompletionSource<ActionHandler> completionSource = null;
 
         public bool IsCompleted
         {
@@ -34,6 +36,16 @@ namespace Assets.Scripts.StateMachine
             {
                 return this.isSuspended;
             }
+        }
+
+        public Task<ActionHandler> Async()
+        {
+            completionSource = new TaskCompletionSource<ActionHandler>();
+            if (this.isCompleted || this.isAborted)
+            {
+                completionSource.TrySetResult(this);
+            }
+            return completionSource.Task;
         }
 
         public ActionHandler WithComplete(Action completeAction)
@@ -106,6 +118,7 @@ namespace Assets.Scripts.StateMachine
             var tmp = completeAction;
             completeAction = null;
             tmp?.Invoke();
+            completionSource?.TrySetResult(this);
         }
 
         private void InvokeAborted()
@@ -116,6 +129,7 @@ namespace Assets.Scripts.StateMachine
             var tmp = abortAction;
             abortAction = null;
             tmp?.Invoke();
+            completionSource?.TrySetResult(this);
         }
     }
 }

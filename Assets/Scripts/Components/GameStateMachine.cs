@@ -11,11 +11,15 @@ public class GameStateMachine : StateMachine
     private ComponentWithActions component1;
     private ComponentWithActions component2;
 
-    public void Start()
+    public async void Start()
     {
         component1 = gameObject1.GetComponent<ComponentWithActions>();
         component2 = gameObject2.GetComponent<ComponentWithActions>();
 
+        Debug.Log("State Machine: Start");
+        await component1.ActionDelayed(1f).Async();
+
+        Debug.Log("State Machine: After await action");
         NextState(Initial());
     }
 
